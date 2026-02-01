@@ -56,7 +56,7 @@ export default function KaTeXBlock({ value, onChange }: KaTeXBlockProps) {
 
       <div className="text-sm text-gray-400">
         <p>Quick reference: Use $...$ for inline math, $$...$$ for display math.</p>
-        <p>Common symbols: \alpha, \beta, \sqrt{x}, \frac{a}{b}, \sum_{i=1}^n</p>
+        <p>{"Common symbols: \\alpha, \\beta, \\sqrt{x}, \\frac{a}{b}, \\sum_{i=1}^n"}</p>
       </div>
     </div>
   )
