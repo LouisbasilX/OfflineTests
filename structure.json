@@ -1,0 +1,153 @@
+{
+  "offlinetests": {
+    "app": {
+      "(auth)": {
+        "login": { "page.tsx": "" },
+        "register": { "page.tsx": "" }
+      },
+      "admin": {
+        "page.tsx": "",
+        "components": {
+          "MetricsCard.tsx": "",
+          "ServerLoad.tsx": "",
+          "ActivityLog.tsx": ""
+        }
+      },
+      "editor": {
+        "page.tsx": "",
+        "components": {
+          "KaTeXBlock.tsx": "",
+          "QuestionForm.tsx": "",
+          "TestPreview.tsx": "",
+          "MathToolbar.tsx": ""
+        }
+      },
+      "exam": {
+        "[code]": { "page.tsx": "" },
+        "components": {
+          "CountdownTimer.tsx": "",
+          "QuestionNav.tsx": "",
+          "OfflineIndicator.tsx": "",
+          "FullscreenToggle.tsx": ""
+        }
+      },
+      "correction": {
+        "[submissionId]": { "page.tsx": "" },
+        "components": {
+          "BurningTimer.tsx": "",
+          "GradingPanel.tsx": "",
+          "ScoreCalculator.tsx": ""
+        }
+      },
+      "reports": {
+        "teacher": {
+          "[testId]": { "page.tsx": "" }
+        },
+        "student": {
+          "[submissionId]": { "page.tsx": "" }
+        }
+      },
+      "api": {
+        "health": { "route.ts": "" }
+      },
+      "globals.css": "",
+      "layout.tsx": "",
+      "page.tsx": ""
+    },
+    "api": {
+      "Cargo.toml": "",
+      "Cargo.lock": "",
+      "test": {
+        "create.rs": "",
+        "fetch.rs": "",
+        "submit.rs": ""
+      },
+      "admin": {
+        "flush.rs": ""
+      }
+    },
+    "components": {
+      "ui": {
+        "Button.tsx": "",
+        "Card.tsx": "",
+        "Modal.tsx": "",
+        "Toast.tsx": "",
+        "LoadingSpinner.tsx": ""
+      },
+      "security": {
+        "EncryptionStatus.tsx": "",
+        "TabMonitor.tsx": "",
+        "SuspiciousActivity.tsx": ""
+      },
+      "pdf": {
+        "TeacherReport.tsx": "",
+        "StudentReport.tsx": "",
+        "ReportTable.tsx": ""
+      },
+      "layout": {
+        "Sidebar.tsx": "",
+        "Header.tsx": "",
+        "OfflineBanner.tsx": ""
+      }
+    },
+    "lib": {
+      "encryption.ts": "",
+      "indexedDB.ts": "",
+      "supabase": {
+        "client.ts": "",
+        "types.ts": "",
+        "queries.ts": ""
+      },
+      "validation": {
+        "schema.ts": "",
+        "antiCheat.ts": ""
+      },
+      "pdf": {
+        "generateTeacherReport.ts": "",
+        "generateStudentReport.ts": ""
+      },
+      "time": {
+        "timer.ts": "",
+        "monotonic.ts": ""
+      },
+      "hooks": {
+        "useOffline.ts": "",
+        "useFullscreen.ts": "",
+        "useAutoSave.ts": ""
+      }
+    },
+    "public": {
+      "fonts": {},
+      "images": {},
+      "favicon.ico": ""
+    },
+    "types": {
+      "test.ts": "",
+      "submission.ts": "",
+      "user.ts": "",
+      "index.ts": ""
+    },
+    "scripts": {
+      "setup-db.sh": "",
+      "build-rust.sh": "",
+      "deploy.sh": ""
+    },
+    "migrations": {
+      "001_initial_schema.sql": "",
+      "002_add_triggers.sql": "",
+      "003_add_indexes.sql": ""
+    },
+    ".env.example": "",
+    ".env.local": "",
+    ".gitignore": "",
+    "package.json": "",
+    "package-lock.json": "",
+    "tailwind.config.js": "",
+    "postcss.config.js": "",
+    "next.config.js": "",
+    "tsconfig.json": "",
+    "vercel.json": "",
+    "rust-toolchain.toml": "",
+    "README.md": ""
+  }
+}

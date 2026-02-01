@@ -1,0 +1,280 @@
+import { jsPDF } from 'jspdf'
+import autoTable from 'jspdf-autotable'
+
+interface StudentReportData {
+  studentName: string
+  testTitle: string
+  score: number
+  maxScore: number
+  percentage: number
+  grade: string
+  questions: Array<{
+    question: string
+    studentAnswer: string
+    correctAnswer: string
+    score: number
+    maxScore: number
+    feedback?: string
+  }>
+  teacherNotes?: string
+  metadata?: {
+    testCode?: string
+    duration?: number
+    submittedAt?: string
+    timeSpent?: number // in minutes
+  }
+}
+
+export async function generateStudentReport(data: StudentReportData): Promise<Blob> {
+  const doc = new jsPDF()
+  
+  // Title
+  doc.setFontSize(20)
+  doc.setTextColor(56, 189, 248)
+  doc.text('Test Result Report', 105, 20, { align: 'center' })
+  
+  // Student info
+  doc.setFontSize(12)
+  doc.setTextColor(0, 0, 0)
+  doc.text(`Student: ${data.studentName}`, 20, 40)
+  doc.text(`Test: ${data.testTitle}`, 20, 50)
+  doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 60)
+  
+  if (data.metadata?.testCode) {
+    doc.text(`Test Code: ${data.metadata.testCode}`, 20, 70)
+  }
+  
+  // Summary
+  autoTable(doc, {
+    startY: 80,
+    head: [['Metric', 'Value']],
+    body: [
+      ['Score', `${data.score}/${data.maxScore}`],
+      ['Percentage', `${data.percentage}%`],
+      ['Grade', data.grade],
+      ['Questions', data.questions.length.toString()],
+      ['Correct Answers', data.questions.filter(q => q.score === q.maxScore).length.toString()],
+      ...(data.metadata?.timeSpent ? [['Time Spent', `${data.metadata.timeSpent} minutes`]] : []),
+      ...(data.metadata?.submittedAt ? [['Submitted', new Date(data.metadata.submittedAt).toLocaleDateString()]] : [])
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: [56, 189, 248] },
+  })
+  
+  // Performance summary
+  const performance = getPerformanceAnalysis(data.questions)
+  autoTable(doc, {
+    startY: (doc as any).lastAutoTable.finalY + 10,
+    head: [['Category', 'Count', 'Percentage']],
+    body: [
+      ['Perfect Scores', performance.perfect.toString(), `${performance.perfectPercentage}%`],
+      ['Partial Scores', performance.partial.toString(), `${performance.partialPercentage}%`],
+      ['Zero Scores', performance.zero.toString(), `${performance.zeroPercentage}%`],
+      ['Average per Question', performance.averageScore.toFixed(1), `${performance.averagePercentage}%`]
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: [56, 189, 248] },
+  })
+  
+  // Questions breakdown
+  autoTable(doc, {
+    startY: (doc as any).lastAutoTable.finalY + 10,
+    head: [['Question', 'Your Answer', 'Correct Answer', 'Score', 'Status']],
+    body: data.questions.map((q, i) => [
+      `Q${i + 1}: ${truncateText(q.question, 30)}`,
+      truncateText(q.studentAnswer, 20),
+      truncateText(q.correctAnswer, 20),
+      `${q.score}/${q.maxScore}`,
+      q.score === q.maxScore ? '✓ Correct' : '✗ Incorrect'
+    ]),
+    theme: 'grid',
+    headStyles: { fillColor: [56, 189, 248] },
+    columnStyles: {
+      0: { cellWidth: 40 }, // Question
+      1: { cellWidth: 30 }, // Your Answer
+      2: { cellWidth: 30 }, // Correct Answer
+      3: { cellWidth: 20 }, // Score
+      4: { cellWidth: 25 }  // Status
+    }
+  })
+  
+  // Initialize yPos here so it's available in both conditions
+  let yPos = (doc as any).lastAutoTable.finalY + 20
+  
+  // Detailed feedback for incorrect answers
+  const incorrectQuestions = data.questions.filter(q => q.score < q.maxScore)
+  if (incorrectQuestions.length > 0) {
+    doc.setFontSize(11)
+    doc.text('Areas for Improvement:', 20, yPos)
+    doc.setFontSize(10)
+    
+    // Update yPos for the first feedback item
+    yPos += 10
+    
+    incorrectQuestions.forEach((q, i) => {
+      if (yPos > 250) {
+        doc.addPage()
+        yPos = 20
+      }
+      
+      doc.text(`Question ${data.questions.indexOf(q) + 1}:`, 20, yPos)
+      yPos += 7
+      
+      if (q.feedback) {
+        const feedback = doc.splitTextToSize(`Feedback: ${q.feedback}`, 170)
+        doc.text(feedback, 25, yPos)
+        yPos += feedback.length * 5 + 5
+      }
+      
+      doc.text(`Your answer: ${q.studentAnswer}`, 25, yPos)
+      yPos += 7
+      doc.text(`Correct answer: ${q.correctAnswer}`, 25, yPos)
+      yPos += 10
+    })
+  }
+  
+  // Teacher notes
+  if (data.teacherNotes) {
+    // Check if we need a new page before adding teacher notes
+    if (yPos > 250) {
+      doc.addPage()
+      yPos = 20
+    }
+    
+    doc.setFontSize(11)
+    doc.text('Teacher Notes:', 20, yPos)
+    yPos += 7
+    doc.setFontSize(10)
+    const notes = doc.splitTextToSize(data.teacherNotes, 170)
+    doc.text(notes, 20, yPos)
+    yPos += notes.length * 5 + 10
+  }
+  
+  // Footer
+  const pageCount = doc.getNumberOfPages()
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i)
+    doc.setFontSize(8)
+    doc.setTextColor(128, 128, 128)
+    doc.text(
+      `Page ${i} of ${pageCount} • Generated by OfflineTests • For personal review only`,
+      105,
+      doc.internal.pageSize.height - 10,
+      { align: 'center' }
+    )
+    doc.text(
+      `All data encrypted • Automatically expires • ${new Date().toLocaleString()}`,
+      105,
+      doc.internal.pageSize.height - 5,
+      { align: 'center' }
+    )
+  }
+  
+  // Convert to blob
+  const pdfBlob = doc.output('blob')
+  return pdfBlob
+}
+
+export function downloadStudentReport(data: StudentReportData, filename?: string) {
+  generateStudentReport(data).then(blob => {
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename || `Test_Result_${data.studentName.replace(/\s+/g, '_')}.pdf`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  })
+}
+
+function truncateText(text: string, maxLength: number): string {
+  return text.length > maxLength ? text.substring(0, maxLength - 3) + '...' : text
+}
+
+function getPerformanceAnalysis(questions: StudentReportData['questions']) {
+  const perfect = questions.filter(q => q.score === q.maxScore).length
+  const partial = questions.filter(q => q.score > 0 && q.score < q.maxScore).length
+  const zero = questions.filter(q => q.score === 0).length
+  const total = questions.length
+  
+  const totalScore = questions.reduce((sum, q) => sum + q.score, 0)
+  const totalMaxScore = questions.reduce((sum, q) => sum + q.maxScore, 0)
+  
+  return {
+    perfect,
+    partial,
+    zero,
+    perfectPercentage: ((perfect / total) * 100).toFixed(1),
+    partialPercentage: ((partial / total) * 100).toFixed(1),
+    zeroPercentage: ((zero / total) * 100).toFixed(1),
+    averageScore: totalScore / total,
+    averagePercentage: ((totalScore / totalMaxScore) * 100).toFixed(1),
+    totalScore,
+    totalMaxScore
+  }
+}
+
+export function getGradeRecommendation(percentage: number): {
+  grade: string
+  color: string
+  message: string
+  suggestions: string[]
+} {
+  if (percentage >= 90) {
+    return {
+      grade: 'A',
+      color: '#10b981', // Green
+      message: 'Excellent work!',
+      suggestions: [
+        'Continue practicing advanced concepts',
+        'Help peers who are struggling',
+        'Consider taking more challenging tests'
+      ]
+    }
+  } else if (percentage >= 80) {
+    return {
+      grade: 'B',
+      color: '#3b82f6', // Blue
+      message: 'Good performance',
+      suggestions: [
+        'Review questions you missed',
+        'Focus on understanding concepts fully',
+        'Practice time management'
+      ]
+    }
+  } else if (percentage >= 70) {
+    return {
+      grade: 'C',
+      color: '#f59e0b', // Yellow
+      message: 'Satisfactory performance',
+      suggestions: [
+        'Review fundamental concepts',
+        'Practice more sample questions',
+        'Ask for help on difficult topics'
+      ]
+    }
+  } else if (percentage >= 60) {
+    return {
+      grade: 'D',
+      color: '#f97316', // Orange
+      message: 'Needs improvement',
+      suggestions: [
+        'Focus on basic concepts',
+        'Attend extra help sessions',
+        'Practice regularly'
+      ]
+    }
+  } else {
+    return {
+      grade: 'F',
+      color: '#ef4444', // Red
+      message: 'Requires significant improvement',
+      suggestions: [
+        'Meet with teacher for guidance',
+        'Start from basic concepts',
+        'Practice daily with simpler questions'
+      ]
+    }
+  }
+}

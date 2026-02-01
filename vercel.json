@@ -1,0 +1,15 @@
+{
+  "functions": {
+    "api/*.rs": {
+      "runtime": "vercel-rust@1.0.0"
+    }
+  },
+  "buildCommand": "cd api && cargo build --release --target=x86_64-unknown-linux-musl",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "installCommand": "npm install && cd api && cargo fetch",
+  "regions": ["iad1"],
+  "env": {
+    "RUST_BACKTRACE": "1"
+  }
+}
