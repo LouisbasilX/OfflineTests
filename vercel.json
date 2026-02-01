@@ -2,17 +2,13 @@
   "version": 2,
   "functions": {
     "api/**/*.rs": {
-      "runtime": "vercel-rust@0.11.4"
+      "runtime": "rust"
     }
   },
   "routes": [
-    {
-      "src": "/api/test/(.*)",
-      "dest": "/api/test/$1.rs"
-    },
-    {
-      "src": "/api/admin/(.*)",
-      "dest": "/api/admin/$1.rs"
-    }
+    { "src": "/api/test/create", "dest": "/api/test/create.rs" },
+    { "src": "/api/test/fetch", "dest": "/api/test/fetch.rs" },
+    { "src": "/api/test/submit", "dest": "/api/test/submit.rs" },
+    { "src": "/api/admin/flush", "dest": "/api/admin/flush.rs" }
   ]
 }
