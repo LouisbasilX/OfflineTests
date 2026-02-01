@@ -36,7 +36,7 @@
     "@types/uuid": "^9.0.0",
     "typescript": "^5.2.0",
     "@types/katex": "^0.16.0",
-    "@vercel/rust": "^1.0.0",
+
     "autoprefixer": "^10.4.0",
     "eslint": "^8.0.0",
     "eslint-config-next": "14.0.0",
