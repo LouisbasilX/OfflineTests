@@ -2,15 +2,54 @@
   "version": 2,
   "builds": [
     {
+      "src": "package.json",
+      "use": "@vercel/next"
+    },
+    {
       "src": "api/**/*.rs",
       "use": "vercel-rust",
-      "config": { "buildArgs": ["--release", "--jobs", "1"] }
+      "config": {
+        "buildArgs": ["--release", "--jobs", "1"]
+      }
     }
   ],
   "routes": [
-    { "src": "/api/test/create", "dest": "api/test/create.rs" },
-    { "src": "/api/test/fetch", "dest": "api/test/fetch.rs" },
-    { "src": "/api/test/submit", "dest": "api/test/submit.rs" },
-    { "src": "/api/admin/flush", "dest": "api/admin/flush.rs" }
-  ]
+    {
+      "src": "/api/test/create",
+      "dest": "api/test/create.rs"
+    },
+    {
+      "src": "/api/test/fetch",
+      "dest": "api/test/fetch.rs"
+    },
+    {
+      "src": "/api/test/submit",
+      "dest": "api/test/submit.rs"
+    },
+    {
+      "src": "/api/admin/flush",
+      "dest": "api/admin/flush.rs"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/"
+    }
+  ],
+  "functions": {
+    "api/test/create.rs": {
+      "maxDuration": 10
+    },
+    "api/test/fetch.rs": {
+      "maxDuration": 10
+    },
+    "api/test/submit.rs": {
+      "maxDuration": 10
+    },
+    "api/admin/flush.rs": {
+      "maxDuration": 10
+    }
+  }
 }
