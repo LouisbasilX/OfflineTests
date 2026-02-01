@@ -1,6 +1,6 @@
 use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
 use serde::{Deserialize, Serialize};
-use sqlx::{Pool, Postgres};
+use sqlx::{Pool, Postgres, Row};
 use chrono::{Duration, Utc};
 use uuid::Uuid;
 use std::env;
@@ -39,7 +39,6 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
         }
     };
     
-    // Validate test code
     if request.test_code.len() != 6 || !request.test_code.chars().all(char::is_numeric) {
         return Ok(Response::builder()
             .status(StatusCode::BAD_REQUEST)
@@ -60,7 +59,7 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
     let teacher_uuid = Uuid::parse_str(&request.teacher_id)
         .map_err(|e| Error::from(format!("Invalid teacher ID: {}", e)))?;
     
-    match sqlx::query!(
+    let result = sqlx::query(
         r#"
         INSERT INTO tests (
             test_code, 
@@ -74,18 +73,20 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         ON CONFLICT (test_code) DO NOTHING
         RETURNING id
-        "#,
-        request.test_code,
-        request.encrypted_test_data,
-        request.duration_minutes,
-        start_test_time,
-        expires_at,
-        request.allow_corrections,
-        teacher_uuid
+        "#
     )
+    .bind(&request.test_code)
+    .bind(&request.encrypted_test_data)
+    .bind(request.duration_minutes)
+    .bind(start_test_time)
+    .bind(expires_at)
+    .bind(request.allow_corrections)
+    .bind(teacher_uuid)
     .fetch_optional(&pool)
-    .await {
-        Ok(Some(_)) => {
+    .await;
+
+    match result {
+        Ok(Some(_row)) => {
             let response = CreateTestResponse {
                 success: true,
                 message: "Test created successfully".into(),

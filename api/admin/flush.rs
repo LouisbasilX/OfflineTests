@@ -1,4 +1,3 @@
-// api/admin/flush.rs
 use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
 use sqlx::{Pool, Postgres};
 use std::env;
@@ -9,7 +8,6 @@ async fn main() -> Result<(), Error> {
 }
 
 async fn handler(req: Request) -> Result<Response<Body>, Error> {
-    // Validate admin token
     let auth_header = req.headers()
         .get("Authorization")
         .and_then(|h| h.to_str().ok());
@@ -25,33 +23,17 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
     
     let pool = establish_db_pool().await?;
     
-    // Manual cleanup
-    let deleted_tests = sqlx::query!(
-        "DELETE FROM tests WHERE expires_at < NOW() RETURNING id"
-    )
-    .fetch_all(&pool)
-    .await?;
-    
-    let deleted_subs = sqlx::query!(
-        "DELETE FROM submissions WHERE expires_at < NOW() RETURNING id"
-    )
-    .fetch_all(&pool)
-    .await?;
-    
-    let deleted_corrections = sqlx::query!(
-        "DELETE FROM corrections WHERE expires_at < NOW() RETURNING id"
-    )
-    .fetch_all(&pool)
-    .await?;
+    let t = sqlx::query("DELETE FROM tests WHERE expires_at < NOW()").execute(&pool).await?;
+    let s = sqlx::query("DELETE FROM submissions WHERE expires_at < NOW()").execute(&pool).await?;
+    let c = sqlx::query("DELETE FROM corrections WHERE expires_at < NOW()").execute(&pool).await?;
     
     Ok(Response::builder()
         .status(StatusCode::OK)
-        .header("Content-Type", "application/json")
         .body(Body::Text(format!(
             "Flushed: {} tests, {} submissions, {} corrections",
-            deleted_tests.len(),
-            deleted_subs.len(),
-            deleted_corrections.len()
+            t.rows_affected(),
+            s.rows_affected(),
+            c.rows_affected()
         )))?)
 }
 
