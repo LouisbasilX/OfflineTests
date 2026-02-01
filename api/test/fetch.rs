@@ -1,23 +1,14 @@
 use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sqlx::{Pool, Postgres, Row};
-use chrono::Utc;
-use uuid::Uuid;
 use std::env;
 
-#[derive(Deserialize)]
-struct SubmitRequest {
-    test_code: String,
-    encrypted_submission_data: serde_json::Value,
-    time_logs: serde_json::Value,
-    student_name: Option<String>,
-}
-
 #[derive(Serialize)]
-struct SubmitResponse {
+struct FetchResponse {
     success: bool,
-    suspicious: bool,
-    submission_id: Option<String>,
+    encrypted_test_data: Option<serde_json::Value>,
+    duration_minutes: Option<i32>,
+    allow_corrections: Option<bool>,
     message: String,
 }
 
@@ -29,117 +20,79 @@ async fn main() -> Result<(), Error> {
 async fn handler(req: Request) -> Result<Response<Body>, Error> {
     let pool = establish_db_pool().await?;
     
-    let request: SubmitRequest = match serde_json::from_slice(req.body()) {
-        Ok(req) => req,
-        Err(_) => {
+    let query_string = req.uri().query().unwrap_or("");
+    let params: Vec<&str> = query_string.split('&').collect();
+    
+    let mut test_code = None;
+    for param in params {
+        if param.starts_with("code=") {
+            test_code = Some(param[5..].to_string());
+            break;
+        }
+    }
+    
+    let test_code = match test_code {
+        Some(code) if code.len() == 6 => code,
+        _ => {
             return Ok(Response::builder()
                 .status(StatusCode::BAD_REQUEST)
-                .body(Body::Text("Invalid JSON".into()))?);
+                .body(Body::Text("Missing or invalid test code".into()))?);
         }
     };
     
-    let test_row = match sqlx::query("SELECT id FROM tests WHERE test_code = $1")
-        .bind(&request.test_code)
-        .fetch_optional(&pool)
-        .await {
-            Ok(Some(row)) => row,
-            Ok(None) => {
-                return Ok(Response::builder()
-                    .status(StatusCode::NOT_FOUND)
-                    .body(Body::Text("Test not found".into()))?);
-            }
-            Err(e) => {
-                return Ok(Response::builder()
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(Body::Text(e.to_string().into()))?);
-            }
-        };
-    
-    let test_id: Uuid = test_row.get("id");
-    let suspicious = validate_time_logs(&request.time_logs);
-    let student_name = request.student_name.unwrap_or_else(|| "Anonymous".into());
-    
-    let insert_result = sqlx::query(
+    let result = sqlx::query(
         r#"
-        INSERT INTO submissions (
-            test_id, 
-            student_name, 
-            encrypted_submission_data, 
-            time_logs, 
-            is_suspicious, 
-            submitted_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING id
+        SELECT encrypted_test_data, duration_minutes, allow_corrections
+        FROM tests 
+        WHERE test_code = $1 AND expires_at > NOW()
         "#
     )
-    .bind(test_id)
-    .bind(student_name)
-    .bind(&request.encrypted_submission_data)
-    .bind(&request.time_logs)
-    .bind(suspicious)
-    .bind(Utc::now())
-    .fetch_one(&pool)
+    .bind(test_code)
+    .fetch_optional(&pool)
     .await;
 
-    match insert_result {
-        Ok(record) => {
-            let sub_id: Uuid = record.get("id");
-            let response = SubmitResponse {
+    match result {
+        Ok(Some(row)) => {
+            let response = FetchResponse {
                 success: true,
-                suspicious,
-                submission_id: Some(sub_id.to_string()),
-                message: if suspicious {
-                    "Submission recorded (flagged for review)".into()
-                } else {
-                    "Submission successful".into()
-                },
+                encrypted_test_data: Some(row.get("encrypted_test_data")),
+                duration_minutes: Some(row.get("duration_minutes")),
+                allow_corrections: Some(row.get("allow_corrections")),
+                message: "Test fetched successfully".into(),
             };
             
             Ok(Response::builder()
-                .status(StatusCode::CREATED)
+                .status(StatusCode::OK)
+                .header("Content-Type", "application/json")
+                .body(Body::Text(serde_json::to_string(&response)?))?)
+        }
+        Ok(None) => {
+            let response = FetchResponse {
+                success: false,
+                encrypted_test_data: None,
+                duration_minutes: None,
+                allow_corrections: None,
+                message: "Test not found or expired".into(),
+            };
+            
+            Ok(Response::builder()
+                .status(StatusCode::NOT_FOUND)
                 .header("Content-Type", "application/json")
                 .body(Body::Text(serde_json::to_string(&response)?))?)
         }
         Err(e) => {
+            eprintln!("Database error: {}", e);
             Ok(Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::Text(e.to_string().into()))?)
+                .body(Body::Text("Internal server error".into()))?)
         }
     }
-}
-
-fn validate_time_logs(time_logs: &serde_json::Value) -> bool {
-    let logs_array = match time_logs.as_array() {
-        Some(arr) => arr,
-        None => return true,
-    };
-    
-    if logs_array.is_empty() { return true; }
-    
-    let mut suspicious = false;
-    let mut prev_exit: Option<f64> = None;
-    
-    for (i, log) in logs_array.iter().enumerate() {
-        let entry = log.get("entry").and_then(|v| v.as_f64()).unwrap_or(0.0);
-        let exit = log.get("exit").and_then(|v| v.as_f64());
-        
-        if let Some(exit_val) = exit {
-            if exit_val < entry { suspicious = true; break; }
-            if let Some(prev) = prev_exit {
-                if entry < prev { suspicious = true; break; }
-            }
-            prev_exit = Some(exit_val);
-            let duration = (exit_val - entry) / 1000.0;
-            if duration < 1.0 && i > 0 { suspicious = true; break; }
-        }
-    }
-    suspicious
 }
 
 async fn establish_db_pool() -> Result<Pool<Postgres>, Error> {
     let database_url = env::var("DATABASE_URL")
         .map_err(|_| Error::from("DATABASE_URL not set"))?;
+    
     Pool::<Postgres>::connect(&database_url).await
         .map_err(|e| Error::from(format!("Database connection failed: {}", e)))
 }
