@@ -3,11 +3,8 @@
   "builds": [
     {
       "src": "api/**/*.rs",
-      "use": "vercel-rust@4.0.9",
-      "config": {
-        "buildArgs": ["--release"],
-        "rustFlags": "-C target-feature=+crt-static"
-      }
+      "use": "vercel-rust",
+      "config": { "buildArgs": ["--release", "--jobs", "1"] }
     }
   ],
   "routes": [
@@ -15,8 +12,5 @@
     { "src": "/api/test/fetch", "dest": "api/test/fetch.rs" },
     { "src": "/api/test/submit", "dest": "api/test/submit.rs" },
     { "src": "/api/admin/flush", "dest": "api/admin/flush.rs" }
-  ],
-  "env": {
-    "SQLX_OFFLINE": "true"
-  }
+  ]
 }
