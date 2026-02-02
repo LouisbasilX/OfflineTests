@@ -1,4 +1,5 @@
 'use client'
+import { useState } from 'react';
 
 interface MathToolbarProps {
   onInsert: (symbol: string) => void
@@ -134,7 +135,7 @@ export default function MathToolbar({ onInsert }: MathToolbarProps) {
 
       <div className="mt-4 pt-4 border-t border-border text-xs text-gray-400">
         <p>Tip: Use $$ for display math and $ for inline math</p>
-        <p>Example: $$\\frac{a}{b}$$ or $x^2 + y^2 = z^2$</p>
+       <p>{"Example: $$\\frac{a}{b}$$ or $x^2 + y^2 = z^2$"}</p>
       </div>
     </div>
   )
