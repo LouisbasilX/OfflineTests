@@ -74,17 +74,18 @@ export default function EditorPage() {
           teacher_id: '00000000-0000-0000-0000-000000000000' // Replace with actual teacher ID from auth
         })
       })
-
+if (!response.ok) {
+  const rawError = await response.text(); // Get the text starting with "J"
+  console.log("DEBUG - Raw Error from Rust:", rawError);
+  alert("RUST SAYS: " + rawError); // This will pop up the hidden message
+  setLoading(false);
+  return; 
+}
       const result = await response.json()
       
       if (response.ok) {
         alert(`Test created successfully! Test Code: ${testCode}`)
         router.push(`/exam/${testCode}`)
-      } else {
-         const errorText = await response.text(); // Get the raw string "JSON Error: ..."
-  console.error("THE REAL BEEF IS HERE:", errorText); 
-  alert(errorText);
-  return;
       }
     } catch (error) {
       console.error('Error creating test:', error)
