@@ -6,6 +6,7 @@ use uuid::Uuid;
 use std::env;
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct CreateTestRequest {
     test_code: String,
     encrypted_test_data: serde_json::Value,

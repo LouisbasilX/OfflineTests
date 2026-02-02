@@ -71,7 +71,7 @@ export default function EditorPage() {
           encryptedTestData: encrypted,
           durationMinutes: duration,
           allowCorrections,
-          teacher_id: 'temp-teacher-id' // Replace with actual teacher ID from auth
+          teacher_id: '00000000-0000-0000-0000-000000000000' // Replace with actual teacher ID from auth
         })
       })
 
