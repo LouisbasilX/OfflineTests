@@ -33,11 +33,17 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
     
    let request: CreateTestRequest = match serde_json::from_slice(req.body()) {
     Ok(req) => req,
-    Err(e) => { // Added 'e' here
-        return Ok(Response::builder()
-            .status(StatusCode::BAD_REQUEST)
-            .body(Body::Text(format!("JSON Error: {}", e).into()))?); // Return the real error
-    }
+    // Instead of Body::Text("JSON Error..."), return a JSON object
+Err(e) => {
+    let error_map = serde_json::json!({
+        "success": false,
+        "message": format!("JSON Mismatch: {}", e)
+    });
+    return Ok(Response::builder()
+        .status(StatusCode::BAD_REQUEST)
+        .header("Content-Type", "application/json")
+        .body(Body::Text(error_map.to_string()))?);
+}
 };
     if request.test_code.len() != 6 || !request.test_code.chars().all(char::is_numeric) {
         return Ok(Response::builder()

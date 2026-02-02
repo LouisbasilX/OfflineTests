@@ -81,7 +81,10 @@ export default function EditorPage() {
         alert(`Test created successfully! Test Code: ${testCode}`)
         router.push(`/exam/${testCode}`)
       } else {
-        alert(`Error: ${result.message || 'Failed to create test'}`)
+         const errorText = await response.text(); // Get the raw string "JSON Error: ..."
+  console.error("THE REAL BEEF IS HERE:", errorText); 
+  alert(errorText);
+  return;
       }
     } catch (error) {
       console.error('Error creating test:', error)
