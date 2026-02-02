@@ -31,15 +31,14 @@ async fn main() -> Result<(), Error> {
 async fn handler(req: Request) -> Result<Response<Body>, Error> {
     let pool = establish_db_pool().await?;
     
-    let request: CreateTestRequest = match serde_json::from_slice(req.body()) {
-        Ok(req) => req,
-        Err(_) => {
-            return Ok(Response::builder()
-                .status(StatusCode::BAD_REQUEST)
-                .body(Body::Text("Invalid JSON".into()))?);
-        }
-    };
-    
+   let request: CreateTestRequest = match serde_json::from_slice(req.body()) {
+    Ok(req) => req,
+    Err(e) => { // Added 'e' here
+        return Ok(Response::builder()
+            .status(StatusCode::BAD_REQUEST)
+            .body(Body::Text(format!("JSON Error: {}", e).into()))?); // Return the real error
+    }
+};
     if request.test_code.len() != 6 || !request.test_code.chars().all(char::is_numeric) {
         return Ok(Response::builder()
             .status(StatusCode::BAD_REQUEST)
