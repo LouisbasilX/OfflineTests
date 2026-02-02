@@ -1,16 +1,18 @@
 {
   "version": 2,
   "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    },
-    {
-      "src": "api/**/*.rs",
+    { "src": "package.json", "use": "@vercel/next" },
+    { 
+      "src": "api/**/*.rs", 
       "use": "vercel-rust",
-      "config": {
-        "rustFlags": "-C target-feature=+crt-static"
-      }
+      "config": { "rustFlags": "-C target-feature=+crt-static" }
     }
+  ],
+  "routes": [
+    { "src": "/api/test/create", "dest": "api/test/create.rs" },
+    { "src": "/api/test/fetch", "dest": "api/test/fetch.rs" },
+    { "src": "/api/test/submit", "dest": "api/test/submit.rs" },
+    { "src": "/api/admin/flush", "dest": "api/admin/flush.rs" },
+    { "src": "/(.*)", "dest": "/$1" }
   ]
 }
