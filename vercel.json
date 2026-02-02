@@ -2,12 +2,14 @@
   "version": 2,
   "builds": [
     { "src": "package.json", "use": "@vercel/next" },
-    { 
-      "src": "api/**/*.rs", 
-      "use": "vercel-rust",
-      "config": { "rustFlags": "-C target-feature=+crt-static" }
-    }
+    { "src": "api/**/*.rs", "use": "vercel-rust" }
   ],
+  "functions": {
+    "api/test/create.rs": { "runtime": "vercel-rust@1.1.6" },
+    "api/test/fetch.rs": { "runtime": "vercel-rust@1.1.6" },
+    "api/test/submit.rs": { "runtime": "vercel-rust@1.1.6" },
+    "api/admin/flush.rs": { "runtime": "vercel-rust@1.1.6" }
+  },
   "routes": [
     { "src": "/api/test/create", "dest": "api/test/create.rs" },
     { "src": "/api/test/fetch", "dest": "api/test/fetch.rs" },
