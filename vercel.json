@@ -1,20 +1,14 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "package.json", "use": "@vercel/next" },
-    { "src": "api/**/*.rs", "use": "vercel-rust" }
-  ],
   "functions": {
-    "api/test/create.rs": { "runtime": "vercel-rust@1.1.6" },
-    "api/test/fetch.rs": { "runtime": "vercel-rust@1.1.6" },
-    "api/test/submit.rs": { "runtime": "vercel-rust@1.1.6" },
-    "api/admin/flush.rs": { "runtime": "vercel-rust@1.1.6" }
+    "api/**/*.rs": {
+      "runtime": "vercel-rust"
+    }
   },
-  "routes": [
-    { "src": "/api/test/create", "dest": "api/test/create.rs" },
-    { "src": "/api/test/fetch", "dest": "api/test/fetch.rs" },
-    { "src": "/api/test/submit", "dest": "api/test/submit.rs" },
-    { "src": "/api/admin/flush", "dest": "api/admin/flush.rs" },
-    { "src": "/(.*)", "dest": "/$1" }
+  "rewrites": [
+    { "source": "/api/test/create", "destination": "/api/test/create.rs" },
+    { "source": "/api/test/fetch", "destination": "/api/test/fetch.rs" },
+    { "source": "/api/test/submit", "destination": "/api/test/submit.rs" },
+    { "source": "/api/admin/flush", "destination": "/api/admin/flush.rs" }
   ]
 }
